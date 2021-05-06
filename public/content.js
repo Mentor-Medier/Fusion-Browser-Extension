@@ -5,9 +5,11 @@ window.postMessage({ type: 'fusion-extension' });
 // input object with keys and values
 // saves each key and value individually to storage
 // checks which one is too big for extension limit
-function saveKeyValueEntryArray(objectToSave) {
+function saveKeyValueEntryArray(objectToSave, prefixNestedKeyName = '', recur = true) {
+  console.log('running save key value entry', objectToSave);
+  console.log('prefix key value', prefixNestedKeyName)
   // keeping track of what's not saved
-  // const allSavedKeys = [];
+  const allSavedKeys = [];
 
   Object.entries(objectToSave).forEach((entry) => {
     const [key, value] = entry;
@@ -15,15 +17,20 @@ function saveKeyValueEntryArray(objectToSave) {
     if (
       JSON.stringify(value).length >= chrome.storage.sync.QUOTA_BYTES_PER_ITEM
     ) {
-      // todo: may want to pass these back in a save as nested?
-      console.log(`${key} is too big: ${JSON.stringify(value)}`);
+      if (recur === true) {
+        console.log('recurring value too big')
+        saveKeyValueEntryArray(value?.data ? value.data : value, key, false);
+      } else {
+        // todo: may want to pass these back in a save as nested?
+        console.log(`${key} is too big: ${JSON.stringify(value)}`);
+      }
     } else {
-      chrome.storage.sync.set({ [key]: value });
-      // allSavedKeys.push(key)
+      chrome.storage.sync.set({ [`${prefixNestedKeyName ? `${prefixNestedKeyName}.` : ''}${key}`]: value });
+      allSavedKeys.push(key)
     }
   });
 
-  // console.log(allSavedKeys, 'all saved keys')
+  console.log(allSavedKeys, 'all saved keys')
 }
 
 function saveFusionData(fusionData) {
