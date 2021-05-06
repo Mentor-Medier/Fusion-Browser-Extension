@@ -31,7 +31,16 @@ const renderSection = (activeTab: string, allKeyValueData: any, status: string) 
   }
 }
 
+const getCurrentTabId = () => {
+  let currentTabId = null;
+  chrome.storage.sync.get(["currentTabId"], function(result) {
+    currentTabId = result.currentTabId;
+  });
+  return currentTabId;
+}
+
 const App = () => {
+  const [pageStatus, setPageStatus] = useState('')
   const [activeTab, setActiveTab] = useState('fusion')
   const [allData, setAllData] = useState({
     status: 'idle',
@@ -53,9 +62,23 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    console.log('running tab checker')
+    chrome.storage.sync.get(["previousTabId", "currentTabId"], function(result) {
+      console.log('result', result)
+      let { previousTabId, currentTabId } = result;
+      if (previousTabId !== currentTabId) {
+        setPageStatus('STALE_CONTENT')
+      }
+    });
+  })
+
+  console.log(pageStatus)
+
   return (
     <div className="App">
       <header className="App-header">
+        <p>{pageStatus}</p>
         <img src={logo} className="App-logo" alt="logo" />
         {
           !allData.data && allData.status !== 'pending' ?
